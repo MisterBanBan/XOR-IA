@@ -1,9 +1,25 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-
 #include "neural_network.h"
+
+void free_network(NeuralNetwork *network) {
+    if(!network)
+        return;
+    
+    if(network->layers) {
+        for (int i = 0; i < network->num_layers; i++) {
+            if(network->layers[i].weights) {
+                for(int j = 0; j < network->layers[i].output_size; j++) {
+                    free(network->layers[i].weights[j]);
+                }
+                free(network->layers[i].weights);
+            }
+            free(network->layers[i].biases);
+            free(network->layers[i].outputs);
+            free(network->layers[i].inputs);
+        }
+        free(network->layers);
+    }
+    free(network);
+}
 
 NeuralNetwork *create_network(int *topology, int num_layers) {
     int i = 0;
@@ -22,7 +38,7 @@ NeuralNetwork *create_network(int *topology, int num_layers) {
         return NULL;
     }
     
-    network->layers = layer;  // ← CORRECTION ICI !
+    network->layers = layer;
     network->num_layers = num_layers;
     
     while (i < num_layers) {
@@ -73,27 +89,6 @@ NeuralNetwork *create_network(int *topology, int num_layers) {
     return network;
 }
 
-void free_network(NeuralNetwork *network) {
-    if(!network)
-        return;
-    
-    if(network->layers) {
-        for (int i = 0; i < network->num_layers; i++) {
-            if(network->layers[i].weights) {
-                for(int j = 0; j < network->layers[i].output_size; j++) {
-                    free(network->layers[i].weights[j]);
-                }
-                free(network->layers[i].weights);
-            }
-            free(network->layers[i].biases);
-            free(network->layers[i].outputs);
-            free(network->layers[i].inputs);
-        }
-        free(network->layers);
-    }
-    free(network);
-}
-
 int main() {
     printf("=== Test du réseau de neurones ===\n\n");
     
@@ -107,25 +102,25 @@ int main() {
         printf("❌ Erreur: allocation échouée\n");
         return 1;
     }
+    printf("✅ Réseau créé\n");
     
-    printf("✅ Réseau créé avec succès!\n\n");
+    printf("\nInitialisation des poids...\n");
+    init_network(nn);
+    printf("✅ Poids initialisés\n");
     
-    printf("Vérification des couches:\n");
-    for (int i = 0; i < num_layers; i++) {
-        printf("Couche %d: %d entrées -> %d neurones\n",
-               i+1, 
-               nn->layers[i].input_size,
-               nn->layers[i].output_size);
+    // Affichage de quelques poids pour vérification
+    printf("\nÉchantillon de poids (couche 1):\n");
+    for (int i = 0; i < 4; i++) {
+        printf("  Neurone %d: w0=%.3f, w1=%.3f, bias=%.3f\n",
+               i,
+               nn->layers[0].weights[i][0],
+               nn->layers[0].weights[i][1],
+               nn->layers[0].biases[i]);
     }
     
-    printf("\nTest d'accès mémoire...\n");
-    nn->layers[0].weights[0][0] = 0.5;
-    nn->layers[0].biases[0] = 0.1;
-    printf("✅ Accès mémoire OK\n");
-    
-    printf("\nLibération de la mémoire...\n");
     free_network(nn);
-    printf("✅ Mémoire libérée\n");
+    printf("\n✅ Mémoire libérée\n");
     
     return 0;
 }
+
